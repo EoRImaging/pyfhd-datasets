@@ -17,3 +17,6 @@ offset (the zeroth one).
 
 - `beam_image.sav`: The output of `beam_image` called with the obs and cut down
 psf structures and dimension=256 for one frequency and 2 pols.
+- `psf_base_superres.sav`: The output of `beam_power` called with the obs and a
+cut down antenna -- biggest difference is a dramatically decreased psf_resolution
+(10 vs the typical 100) to keep the file size down.
