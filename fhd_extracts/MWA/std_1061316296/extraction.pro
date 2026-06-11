@@ -113,3 +113,29 @@ beam_image_arr[1, *, *] = beam_image(psf, obs, pol_i=1, freq_i=0, dimension=dime
 
 output_beam_image_file = "/Users/bryna/Projects/Physics/data_files/fhd_standard/2013_golden/fhd_standard_cal1/beam_image.sav"
 save, beam_image_arr, filename=output_beam_image_file
+
+
+; setup for skymodel test
+catalog_path="gleam_v2_rlb2019_cut.sav"
+obs_file = "/Users/bryna/Projects/Physics/pyfhd-datasets/fhd_extracts/MWA/std_1061316296/1061316296_obs.sav"
+psf_file = "/Users/bryna/Projects/Physics/pyfhd-datasets/fhd_extracts/MWA/std_1061316296/cut_down_psf.sav"
+
+obs = getvar_savefile(obs_file, "obs")
+psf = getvar_savefile(psf_file, "psf")
+
+; set obs freq_array to match psf freq_array
+freqs = psf.freq
+n_freq = n_elements(freqs)
+obs.n_freq = n_freq
+obs.nf_vis = obs.nf_vis[*, 192:193]
+obs.freq_center = mean(freqs)
+
+orig_bi = (*obs.baseline_info)
+new_bi = {tile_A:orig_bi.tile_A,tile_B:orig_bi.tile_B,bin_offset:orig_bi.bin_offset,Jdate:orig_bi.Jdate,freq:freqs,fbin_i:lindgen(n_freq),$
+freq_use:fltarr(n_freq) + 1,tile_use:orig_bi.tile_use,time_use:orig_bi.time_use,tile_names:orig_bi.tile_names,tile_height:orig_bi.tile_height,tile_flag:orig_bi.tile_flag}
+obs.baseline_info = ptr_new(new_bi)
+
+source_array = generate_source_cal_list(obs, psf, catalog_path=catalog_path)
+
+cal_src_list_file = "gleam_v2_rlb2019_cut_cal_src_list.sav"
+save, filename = cal_src_list_file, source_array
