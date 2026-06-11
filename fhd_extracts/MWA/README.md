@@ -1,4 +1,4 @@
-# MWA FHD Extracts
+# FHD Extracts: MWA
 
 ## std_1061316296
 
@@ -20,3 +20,6 @@ psf structures and dimension=256 for one frequency and 2 pols.
 - `psf_base_superres.sav`: The output of `beam_power` called with the obs and a
 cut down antenna -- biggest difference is a dramatically decreased psf_resolution
 (10 vs the typical 100) to keep the file size down.
+- `gleam_v2_rlb2019_cut_cal_src_list.sav`: The output of `generate_source_cal_list`
+called with the obs and cut down psf structures and the
+`fhd_extracts/fhd_catalogs/gleam_v2_rlb2019_cut.sav` catalog in this repo.
