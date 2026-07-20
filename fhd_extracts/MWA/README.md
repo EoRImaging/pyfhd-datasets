@@ -9,6 +9,10 @@ test the beam_image method in beam_utils.py. Full extraction script in `extracti
 ### Inputs
 
 - `1061316296_obs.sav`: the unedited obs structure file
+- `cut_down_params.sav`: A file containing a dramatically cut down version of the
+params structure. Contains just 2 times.
+- `cut_down_obs.sav`: A file containing the obs structure with just the first
+2 times to match the `cut_down_params` file.
 - `cut_down_psf.sav`: A file containing a dramatically cut down version of the
 psf structure. Contains 2 pols, 2 frequencies and 2 baselines and just one pixel
 offset (the zeroth one).

@@ -4,6 +4,34 @@ restore, input_psf_file
 input_obs_file = "/Users/bryna/Projects/Physics/data_files/fhd_standard/2013_golden/fhd_standard_cal1/metadata/1061316296_obs.sav"
 restore, input_obs_file
 
+input_params_file = "/Users/bryna/Projects/Physics/data_files/fhd_standard/2013_golden/fhd_standard_cal1/metadata/1061316296_params.sav"
+restore, input_params_file
+
+; just keep 2 times:
+last_ind = (*obs.baseline_info).bin_offset[2] - 1
+
+new_params = {uu:params.uu[0:last_ind], vv:params.vv[0:last_ind], ww:params.ww[0:last_ind], $
+    baseline_arr:params.baseline_arr[0:last_ind], time:params.time[0:last_ind], $
+    antenna1:params.antenna1[0:last_ind], antenna2:params.antenna2[0:last_ind]}
+
+params=new_params
+output_params_file = "/Users/bryna/Projects/Physics/data_files/fhd_standard/2013_golden/fhd_standard_cal1/cut_down_params.sav"
+save, params, filename=output_params_file
+
+; update obs to drop number of times
+obs.n_time = 2
+orig_bi = (*obs.baseline_info)
+new_bi = {tile_A:orig_bi.tile_A[0:last_ind],tile_B:orig_bi.tile_B[0:last_ind],$
+bin_offset:orig_bi.bin_offset[0:1],Jdate:orig_bi.Jdate[0:1],freq:orig_bi.freq,$
+fbin_i:orig_bi.fbin_i,freq_use:orig_bi.freq_use,tile_use:orig_bi.tile_use,$
+time_use:orig_bi.time_use[0:1],tile_names:orig_bi.tile_names,$
+tile_height:orig_bi.tile_height,tile_flag:orig_bi.tile_flag}
+obs.baseline_info = ptr_new(new_bi)
+
+output_obs_file = "/Users/bryna/Projects/Physics/data_files/fhd_standard/2013_golden/fhd_standard_cal1/cut_down_obs.sav"
+save, obs, filename=output_obs_file
+
+
 ; use smaller psf_resolution to keep files smaller
 psf_resolution = 10
 
