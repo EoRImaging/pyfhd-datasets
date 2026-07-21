@@ -30,3 +30,7 @@ called with the obs and cut down psf structures and the
 - `gleam_v2_rlb2019_cut_cal_src_dft_cut.sav`: A portion of the output of `source_dft`
 called with the sources in `gleam_v2_rlb2019_cut_cal_src_list.sav` and info from
 the obs structure.
+- `gleam_v2_rlb2019_cut_model_vis`: Degridded visibilities using the output of
+`source_dft` called with the sources in `gleam_v2_rlb2019_cut_cal_src_list.sav`
+and the cut down obs and params structures with frequencies matching the test
+beam frequencies in pyfhd.

@@ -206,3 +206,48 @@ yrange = [961, 1024]
 model_uv_cut = model_uv_arr[xrange[0]:xrange[1], yrange[0]:yrange[1]]
 
 save, filename = save_file, model_uv_cut, xrange, yrange
+
+
+; setup for degridding test
+obs_file = "/Users/bryna/Projects/Physics/pyfhd-datasets/fhd_extracts/MWA/std_1061316296/cut_down_obs.sav"
+obs = getvar_savefile(cut_obs_file, "obs")
+
+; set freqs to match pyfhd test beam freqs
+freqs = [1.6512e08, 1.8048e08]
+n_freq = n_elements(freqs)
+
+obs.n_freq = n_freq
+; the input nf_vis has a pol axis, which we don't want.
+obs.nf_vis = obs.nf_vis[0, 0:n_freq]
+obs.freq_center = mean(freqs)
+
+orig_bi = (*obs.baseline_info)
+new_bi = {tile_A:orig_bi.tile_A,tile_B:orig_bi.tile_B,bin_offset:orig_bi.bin_offset,Jdate:orig_bi.Jdate,freq:freqs,fbin_i:lindgen(n_freq),$
+freq_use:fltarr(n_freq) + 1,tile_use:orig_bi.tile_use,time_use:orig_bi.time_use,tile_names:orig_bi.tile_names,tile_height:orig_bi.tile_height,tile_flag:orig_bi.tile_flag}
+obs.baseline_info = ptr_new(new_bi)
+
+psf_dim = 14
+psf_resolution = 10
+beam_mask_threshold = 1e2
+interpolate_kernel = 0
+
+psf = beam_setup(obs,status_str,antenna,file_path_fhd=file_path_fhd,restore_last=0,timing=timing,$
+  beam_mask_threshold=beam_mask_threshold,silent=silent,psf_dim=psf_dim,psf_resolution=psf_resolution,$
+  psf_image_resolution=psf_image_resolution,swap_pol=swap_pol,no_save=no_save,$
+  beam_model_version=beam_model_version,beam_dim_fit=beam_dim_fit,save_antenna_model=save_antenna_model,$
+  interpolate_kernel=interpolate_kernel,transfer_psf=transfer_psf,beam_per_baseline=beam_per_baseline,$
+  beam_function_decomp=beam_function_decomp,beam_param_transfer=beam_param_transfer,$
+  save_beam_metadata_only=save_beam_metadata_only,_Extra=extra)
+
+
+vis_dimension=obs.nbaselines*obs.n_time
+vis_weights=dblarr(obs.n_freq,vis_dimension) + 1
+
+vis_model = dcomplexarr(obs.n_pol, obs.n_freq, vis_dimension)
+
+for pol_i=0, 1 do vis_model[pol_i,*,*]=*(visibility_degrid(model_uv_arr,vis_weights,obs,psf,params,polarization=pol_i,/fill_model_visibilities,_Extra=extra))
+
+
+save_file = "/Users/bryna/Projects/Physics/pyfhd-datasets/fhd_extracts/MWA/std_1061316296/gleam_v2_rlb2019_cut_model_vis.sav"
+
+save, filename = save_file, vis_model
