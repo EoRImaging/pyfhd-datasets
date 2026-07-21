@@ -167,3 +167,42 @@ source_array = generate_source_cal_list(obs, psf, catalog_path=catalog_path)
 
 cal_src_list_file = "gleam_v2_rlb2019_cut_cal_src_list.sav"
 save, filename = cal_src_list_file, source_array
+
+; setup for dft of sources to uvplane test
+x_vec = double(source_array.x)
+y_vec = double(source_array.y)
+
+dim_use = 2048
+; use the full plane
+uv_mask=Fltarr(dim_use,dim_use)+1
+
+uv_i_use=where(uv_mask)
+xvals=double(uv_i_use mod dim_use)-dim_use/2
+yvals=double(Floor(uv_i_use/dim_use))-dim_use/2
+
+; This source_array doesn't have XX & YY fluxes (they're all zero)
+; So just use I flux because we're just checking the dft code.
+flux_arr=Ptrarr(1, 1)
+flux_arr[0,0]=Ptr_new(double(source_array.flux.I))
+
+
+model_uv_vals=source_dft(x_vec,y_vec,xvals,yvals,dimension=dim_use,elements=dim_use,flux=flux_arr,$
+                conserve_memory=conserve_memory,silent=silent,inds_use=inds_use,/double_precision,$
+                gaussian_source_models=gaussian_source_models)
+
+model_uv_arr = dcomplexarr(dim_use, dim_use)
+model_uv_arr[uv_i_use] = *model_uv_vals[0]
+
+; Save out the full uv array for early testing. It's too big for unit tests though
+; save_file = "/Users/bryna/Projects/Physics/pyfhd-datasets/fhd_extracts/MWA/std_1061316296/gleam_v2_rlb2019_cut_cal_src_dft.sav"
+; save, filename = save_file, model_uv_arr
+
+; cut down uvplane to make it small enough for testing
+
+save_file = "/Users/bryna/Projects/Physics/pyfhd-datasets/fhd_extracts/MWA/std_1061316296/gleam_v2_rlb2019_cut_cal_src_dft_cut.sav"
+
+xrange = [1, 1024]
+yrange = [961, 1024]
+model_uv_cut = model_uv_arr[xrange[0]:xrange[1], yrange[0]:yrange[1]]
+
+save, filename = save_file, model_uv_cut, xrange, yrange

@@ -3,8 +3,8 @@
 ## std_1061316296
 
 This is a 2013 golden day zenith pointed obsid. The FHD run was a fairly standard
-calibration run. The extraction was done to create input and output files to
-test the beam_image method in beam_utils.py. Full extraction script in `extraction.pro`.
+calibration run. The extraction was done to create small input and output files
+to test various function. Full extraction script in `extraction.pro`.
 
 ### Inputs
 
@@ -27,3 +27,6 @@ cut down antenna -- biggest difference is a dramatically decreased psf_resolutio
 - `gleam_v2_rlb2019_cut_cal_src_list.sav`: The output of `generate_source_cal_list`
 called with the obs and cut down psf structures and the
 `fhd_extracts/fhd_catalogs/gleam_v2_rlb2019_cut.sav` catalog in this repo.
+- `gleam_v2_rlb2019_cut_cal_src_dft_cut.sav`: A portion of the output of `source_dft`
+called with the sources in `gleam_v2_rlb2019_cut_cal_src_list.sav` and info from
+the obs structure.
