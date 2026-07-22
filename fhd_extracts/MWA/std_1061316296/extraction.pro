@@ -251,3 +251,33 @@ for pol_i=0, 1 do vis_model[pol_i,*,*]=*(visibility_degrid(model_uv_arr,vis_weig
 save_file = "/Users/bryna/Projects/Physics/pyfhd-datasets/fhd_extracts/MWA/std_1061316296/gleam_v2_rlb2019_cut_model_vis.sav"
 
 save, filename = save_file, vis_model
+
+
+; setup for delay filter test
+obs_file = "/Users/bryna/Projects/Physics/pyfhd-datasets/fhd_extracts/MWA/std_1061316296/cut_down_obs.sav"
+obs = getvar_savefile(cut_obs_file, "obs")
+
+; cut down even more to get file small enough
+last_ind = 74
+params_use = {uu:params.uu[0:last_ind], vv:params.vv[0:last_ind], ww:params.ww[0:last_ind], $
+    baseline_arr:params.baseline_arr[0:last_ind], time:params.time[0:last_ind], $
+    antenna1:params.antenna1[0:last_ind], antenna2:params.antenna2[0:last_ind]}
+
+
+input_vis_model_files = "/Users/bryna/Projects/Physics/data_files/fhd_standard/2013_golden/fhd_standard_cal1/vis_data/1061316296_vis_model_" + ["XX", "YY"] + ".sav"
+
+vis_model_ptr = ptrarr(obs.n_pol)
+for pol_i=0, obs.n_pol - 1 do vis_model_ptr[pol_i] = (getvar_savefile(input_vis_model_files[pol_i], "vis_model_ptr"))
+
+; cut down to 2 times to match obs & params
+for pol_i=0, obs.n_pol - 1 do vis_model_ptr[pol_i] = ptr_new(dcomplex((*vis_model_ptr[pol_i])[*,0:n_elements(params_use.uu)-1]))
+
+cut_vis_model_file = "/Users/bryna/Projects/Physics/pyfhd-datasets/fhd_extracts/MWA/std_1061316296/cut_down_vis_model.sav"
+save, vis_model_ptr, filename=cut_vis_model_file
+
+restore, cut_vis_model_file
+vis_delay_filter, vis_model_ptr,  params_use, obs
+
+filtered_vis_model_file = "/Users/bryna/Projects/Physics/pyfhd-datasets/fhd_extracts/MWA/std_1061316296/cut_down_filtered_vis_model.sav"
+save, vis_model_ptr, filename=filtered_vis_model_file
+

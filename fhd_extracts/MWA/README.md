@@ -16,6 +16,9 @@ params structure. Contains just 2 times.
 - `cut_down_psf.sav`: A file containing a dramatically cut down version of the
 psf structure. Contains 2 pols, 2 frequencies and 2 baselines and just one pixel
 offset (the zeroth one).
+- `cut_down_vis_model.sav`: A file containing a dramatically cut down set of
+model visibilities. Contains all frequencies and pols but only 75 baselines. Used
+for testing delay filters.
 
 ### Outputs
 
@@ -34,3 +37,5 @@ the obs structure.
 `source_dft` called with the sources in `gleam_v2_rlb2019_cut_cal_src_list.sav`
 and the cut down obs and params structures with frequencies matching the test
 beam frequencies in pyfhd.
+- `cut_down_filtered_vis_model.sav`: Output of `vis_delay_filter` called with
+the cut down obs and params and `cut_down_vis_model.sav`.
