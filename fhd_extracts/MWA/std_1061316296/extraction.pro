@@ -4,6 +4,34 @@ restore, input_psf_file
 input_obs_file = "/Users/bryna/Projects/Physics/data_files/fhd_standard/2013_golden/fhd_standard_cal1/metadata/1061316296_obs.sav"
 restore, input_obs_file
 
+input_params_file = "/Users/bryna/Projects/Physics/data_files/fhd_standard/2013_golden/fhd_standard_cal1/metadata/1061316296_params.sav"
+restore, input_params_file
+
+; just keep 2 times:
+last_ind = (*obs.baseline_info).bin_offset[2] - 1
+
+new_params = {uu:params.uu[0:last_ind], vv:params.vv[0:last_ind], ww:params.ww[0:last_ind], $
+    baseline_arr:params.baseline_arr[0:last_ind], time:params.time[0:last_ind], $
+    antenna1:params.antenna1[0:last_ind], antenna2:params.antenna2[0:last_ind]}
+
+params=new_params
+output_params_file = "/Users/bryna/Projects/Physics/data_files/fhd_standard/2013_golden/fhd_standard_cal1/cut_down_params.sav"
+save, params, filename=output_params_file
+
+; update obs to drop number of times
+obs.n_time = 2
+orig_bi = (*obs.baseline_info)
+new_bi = {tile_A:orig_bi.tile_A[0:last_ind],tile_B:orig_bi.tile_B[0:last_ind],$
+bin_offset:orig_bi.bin_offset[0:1],Jdate:orig_bi.Jdate[0:1],freq:orig_bi.freq,$
+fbin_i:orig_bi.fbin_i,freq_use:orig_bi.freq_use,tile_use:orig_bi.tile_use,$
+time_use:orig_bi.time_use[0:1],tile_names:orig_bi.tile_names,$
+tile_height:orig_bi.tile_height,tile_flag:orig_bi.tile_flag}
+obs.baseline_info = ptr_new(new_bi)
+
+output_obs_file = "/Users/bryna/Projects/Physics/data_files/fhd_standard/2013_golden/fhd_standard_cal1/cut_down_obs.sav"
+save, obs, filename=output_obs_file
+
+
 ; use smaller psf_resolution to keep files smaller
 psf_resolution = 10
 
@@ -139,3 +167,117 @@ source_array = generate_source_cal_list(obs, psf, catalog_path=catalog_path)
 
 cal_src_list_file = "gleam_v2_rlb2019_cut_cal_src_list.sav"
 save, filename = cal_src_list_file, source_array
+
+; setup for dft of sources to uvplane test
+x_vec = double(source_array.x)
+y_vec = double(source_array.y)
+
+dim_use = 2048
+; use the full plane
+uv_mask=Fltarr(dim_use,dim_use)+1
+
+uv_i_use=where(uv_mask)
+xvals=double(uv_i_use mod dim_use)-dim_use/2
+yvals=double(Floor(uv_i_use/dim_use))-dim_use/2
+
+; This source_array doesn't have XX & YY fluxes (they're all zero)
+; So just use I flux because we're just checking the dft code.
+flux_arr=Ptrarr(1, 1)
+flux_arr[0,0]=Ptr_new(double(source_array.flux.I))
+
+
+model_uv_vals=source_dft(x_vec,y_vec,xvals,yvals,dimension=dim_use,elements=dim_use,flux=flux_arr,$
+                conserve_memory=conserve_memory,silent=silent,inds_use=inds_use,/double_precision,$
+                gaussian_source_models=gaussian_source_models)
+
+model_uv_arr = dcomplexarr(dim_use, dim_use)
+model_uv_arr[uv_i_use] = *model_uv_vals[0]
+
+; Save out the full uv array for early testing. It's too big for unit tests though
+; save_file = "/Users/bryna/Projects/Physics/pyfhd-datasets/fhd_extracts/MWA/std_1061316296/gleam_v2_rlb2019_cut_cal_src_dft.sav"
+; save, filename = save_file, model_uv_arr
+
+; cut down uvplane to make it small enough for testing
+
+save_file = "/Users/bryna/Projects/Physics/pyfhd-datasets/fhd_extracts/MWA/std_1061316296/gleam_v2_rlb2019_cut_cal_src_dft_cut.sav"
+
+xrange = [1, 1024]
+yrange = [961, 1024]
+model_uv_cut = model_uv_arr[xrange[0]:xrange[1], yrange[0]:yrange[1]]
+
+save, filename = save_file, model_uv_cut, xrange, yrange
+
+
+; setup for degridding test
+obs_file = "/Users/bryna/Projects/Physics/pyfhd-datasets/fhd_extracts/MWA/std_1061316296/cut_down_obs.sav"
+obs = getvar_savefile(cut_obs_file, "obs")
+
+; set freqs to match pyfhd test beam freqs
+freqs = [1.6512e08, 1.8048e08]
+n_freq = n_elements(freqs)
+
+obs.n_freq = n_freq
+; the input nf_vis has a pol axis, which we don't want.
+obs.nf_vis = obs.nf_vis[0, 0:n_freq]
+obs.freq_center = mean(freqs)
+
+orig_bi = (*obs.baseline_info)
+new_bi = {tile_A:orig_bi.tile_A,tile_B:orig_bi.tile_B,bin_offset:orig_bi.bin_offset,Jdate:orig_bi.Jdate,freq:freqs,fbin_i:lindgen(n_freq),$
+freq_use:fltarr(n_freq) + 1,tile_use:orig_bi.tile_use,time_use:orig_bi.time_use,tile_names:orig_bi.tile_names,tile_height:orig_bi.tile_height,tile_flag:orig_bi.tile_flag}
+obs.baseline_info = ptr_new(new_bi)
+
+psf_dim = 14
+psf_resolution = 10
+beam_mask_threshold = 1e2
+interpolate_kernel = 0
+
+psf = beam_setup(obs,status_str,antenna,file_path_fhd=file_path_fhd,restore_last=0,timing=timing,$
+  beam_mask_threshold=beam_mask_threshold,silent=silent,psf_dim=psf_dim,psf_resolution=psf_resolution,$
+  psf_image_resolution=psf_image_resolution,swap_pol=swap_pol,no_save=no_save,$
+  beam_model_version=beam_model_version,beam_dim_fit=beam_dim_fit,save_antenna_model=save_antenna_model,$
+  interpolate_kernel=interpolate_kernel,transfer_psf=transfer_psf,beam_per_baseline=beam_per_baseline,$
+  beam_function_decomp=beam_function_decomp,beam_param_transfer=beam_param_transfer,$
+  save_beam_metadata_only=save_beam_metadata_only,_Extra=extra)
+
+
+vis_dimension=obs.nbaselines*obs.n_time
+vis_weights=dblarr(obs.n_freq,vis_dimension) + 1
+
+vis_model = dcomplexarr(obs.n_pol, obs.n_freq, vis_dimension)
+
+for pol_i=0, 1 do vis_model[pol_i,*,*]=*(visibility_degrid(model_uv_arr,vis_weights,obs,psf,params,polarization=pol_i,/fill_model_visibilities,_Extra=extra))
+
+
+save_file = "/Users/bryna/Projects/Physics/pyfhd-datasets/fhd_extracts/MWA/std_1061316296/gleam_v2_rlb2019_cut_model_vis.sav"
+
+save, filename = save_file, vis_model
+
+
+; setup for delay filter test
+obs_file = "/Users/bryna/Projects/Physics/pyfhd-datasets/fhd_extracts/MWA/std_1061316296/cut_down_obs.sav"
+obs = getvar_savefile(cut_obs_file, "obs")
+
+; cut down even more to get file small enough
+last_ind = 74
+params_use = {uu:params.uu[0:last_ind], vv:params.vv[0:last_ind], ww:params.ww[0:last_ind], $
+    baseline_arr:params.baseline_arr[0:last_ind], time:params.time[0:last_ind], $
+    antenna1:params.antenna1[0:last_ind], antenna2:params.antenna2[0:last_ind]}
+
+
+input_vis_model_files = "/Users/bryna/Projects/Physics/data_files/fhd_standard/2013_golden/fhd_standard_cal1/vis_data/1061316296_vis_model_" + ["XX", "YY"] + ".sav"
+
+vis_model_ptr = ptrarr(obs.n_pol)
+for pol_i=0, obs.n_pol - 1 do vis_model_ptr[pol_i] = (getvar_savefile(input_vis_model_files[pol_i], "vis_model_ptr"))
+
+; cut down to 2 times to match obs & params
+for pol_i=0, obs.n_pol - 1 do vis_model_ptr[pol_i] = ptr_new(dcomplex((*vis_model_ptr[pol_i])[*,0:n_elements(params_use.uu)-1]))
+
+cut_vis_model_file = "/Users/bryna/Projects/Physics/pyfhd-datasets/fhd_extracts/MWA/std_1061316296/cut_down_vis_model.sav"
+save, vis_model_ptr, filename=cut_vis_model_file
+
+restore, cut_vis_model_file
+vis_delay_filter, vis_model_ptr,  params_use, obs
+
+filtered_vis_model_file = "/Users/bryna/Projects/Physics/pyfhd-datasets/fhd_extracts/MWA/std_1061316296/cut_down_filtered_vis_model.sav"
+save, vis_model_ptr, filename=filtered_vis_model_file
+
