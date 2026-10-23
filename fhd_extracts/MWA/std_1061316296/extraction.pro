@@ -252,6 +252,16 @@ save_file = "/Users/bryna/Projects/Physics/pyfhd-datasets/fhd_extracts/MWA/std_1
 
 save, filename = save_file, vis_model
 
+; now degrid a uv plane of ones
+model_uv_ones = dcomplexarr(dim_use, dim_use) + 1
+vis_ones = dcomplexarr(obs.n_pol, obs.n_freq, vis_dimension)
+
+for pol_i=0, 1 do vis_ones[pol_i,*,*]=*(visibility_degrid(model_uv_ones,vis_weights,obs,psf,params,polarization=pol_i,/fill_model_visibilities,_Extra=extra))
+
+save_file = "/Users/bryna/Projects/Physics/pyfhd-datasets/fhd_extracts/MWA/std_1061316296/gleam_v2_rlb2019_cut_model_vis_ones.sav"
+
+save, filename = save_file, vis_ones
+
 
 ; setup for delay filter test
 obs_file = "/Users/bryna/Projects/Physics/pyfhd-datasets/fhd_extracts/MWA/std_1061316296/cut_down_obs.sav"

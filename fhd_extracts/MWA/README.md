@@ -52,6 +52,12 @@ the obs structure.
 frequencies in the pyfhd test beams).
   - **Shapes**: *128 tiles, 2 times, 2 frequencies, 2 polarizations,
   8128 baselines, 16256 baseline-times.*
+- `ones_cut_model_vis`: Degridded visibilities from a uv plane that is all ones
+(i.e. from a 1 Jy point source at image center) and using `cut_down_obs.sav` and
+`cut_down_params.sav` with 2 frequencies ([1.6512e08, 1.8048e08] Hz to match the
+frequencies in the pyfhd test beams).
+  - **Shapes**: *128 tiles, 2 times, 2 frequencies, 2 polarizations,
+  8128 baselines, 16256 baseline-times.*
 - `cut_down_filtered_vis_model.sav`: Output of `vis_delay_filter` called with
 the cut down obs and params and `cut_down_vis_model.sav`.
   - **Shapes**: *2 polarizations, 192 frequencies, 1 time, 75 baselines, 75 
